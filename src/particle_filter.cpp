@@ -129,8 +129,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		dataAssociation(inrange_landmarks, trans_observations);
 
 		for(unsigned int j=0;j<trans_observations.size();j++) {
+			double weight = 1.0E-10;
 			for(unsigned int k=0;k<inrange_landmarks.size();k++) {
-				double weight = 0.0001;
 				if(trans_observations[j].id == inrange_landmarks[i].id) {
 					double x_diff = trans_observations[k].x - inrange_landmarks[k].x;
 					double y_diff = trans_observations[k].y - inrange_landmarks[k].y;
@@ -138,8 +138,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 					double y_numer = y_diff + y_diff;
 					weight = weight_calc_const * exp(-(x_numer/x_denom + y_numer/y_denom));
 				}
-				particles[i].weight *= weight;
 			}
+			particles[i].weight *= weight;
 		}
 		weights[i] = particles[i].weight;
 	}
