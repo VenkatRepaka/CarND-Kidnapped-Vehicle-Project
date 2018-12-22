@@ -34,14 +34,12 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	normal_distribution<double> dist_y(y, std_y);
 	normal_distribution<double> dist_theta(theta, std_theta);
 	double init_weight = 1.0/num_particles;
-	// double init_weight = 1.0;
 	for(int i=0;i<num_particles;i++) {
 		Particle p;
 		p.id = i;
 		p.x = dist_x(gen);
 		p.y = dist_y(gen);
 		p.theta = dist_theta(gen);
-		p.weight = init_weight;
 		particles.push_back(p);
 		weights.push_back(init_weight);
 	}
@@ -113,35 +111,35 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	const double weight_calc_const = 1/(2 * M_PI * std_landmark[0] * std_landmark[1]);
 	const double x_denom = 2 * std_landmark[0] * std_landmark[0];
 	const double y_denom = 2 * std_landmark[1] * std_landmark[1];
+	double weight, trans_x, trans_y, particle_landmark_dist, x_diff, y_diff, x_numer, y_numer, exponent;
 	for(unsigned int i=0;i<particles.size();i++) {
 		vector<LandmarkObs> trans_observations;
 		particles[i].weight = 1.0;
 		for(unsigned int j=0;j<observations.size();j++) {
-			double trans_x = particles[i].x + (cos(particles[i].theta) * observations[j].x) - (sin(particles[i].theta) * observations[j].y);
-			double trans_y = particles[i].y + (sin(particles[i].theta) * observations[j].x) + (cos(particles[i].theta) * observations[j].y);
+			trans_x = particles[i].x + (cos(particles[i].theta) * observations[j].x) - (sin(particles[i].theta) * observations[j].y);
+			trans_y = particles[i].y + (sin(particles[i].theta) * observations[j].x) + (cos(particles[i].theta) * observations[j].y);
 			trans_observations.push_back(LandmarkObs{observations[j].id, trans_x, trans_y});
 		}
 
 		vector<LandmarkObs> inrange_landmarks;
 		for(unsigned int j=0;j<map_landmarks.landmark_list.size();j++) {
-			double particle_landmark_dist = dist(map_landmarks.landmark_list[j].x_f, map_landmarks.landmark_list[j].y_f, particles[i].x, particles[i].y);
+			particle_landmark_dist = dist(map_landmarks.landmark_list[j].x_f, map_landmarks.landmark_list[j].y_f, particles[i].x, particles[i].y);
 			if(particle_landmark_dist <= sensor_range) {
 				inrange_landmarks.push_back(LandmarkObs{map_landmarks.landmark_list[j].id_i, map_landmarks.landmark_list[j].x_f, map_landmarks.landmark_list[j].y_f});
 			}
 		}
 		
-				dataAssociation(inrange_landmarks, trans_observations);
+		dataAssociation(inrange_landmarks, trans_observations);
 
-		// double weight = 1.0E-4;
-		double weight = 1.0;
+		weight = 1.0;
 		for(unsigned int j=0;j<trans_observations.size();j++) {
 			for(unsigned int k=0;k<inrange_landmarks.size();k++) {
 				if(trans_observations[j].id == inrange_landmarks[k].id) {
-					double x_diff = trans_observations[j].x - inrange_landmarks[k].x;
-					double y_diff = trans_observations[j].y - inrange_landmarks[k].y;
-					double x_numer = x_diff * x_diff;
-					double y_numer = y_diff * y_diff;
-					double exponent = (x_numer/x_denom) + (y_numer/y_denom);
+					x_diff = trans_observations[j].x - inrange_landmarks[k].x;
+					y_diff = trans_observations[j].y - inrange_landmarks[k].y;
+					x_numer = x_diff * x_diff;
+					y_numer = y_diff * y_diff;
+					exponent = (x_numer/x_denom) + (y_numer/y_denom);
 					weight *= weight_calc_const * exp(-exponent);
 				}
 			}
@@ -159,8 +157,9 @@ void ParticleFilter::resample() {
 	gen.seed(71);
 	discrete_distribution<int> dist_particles(weights.begin(), weights.end());
 	std::vector<Particle>new_particles;
+	int index;
 	for(unsigned int i=0;i<weights.size();i++) {
-		int index = dist_particles(gen);
+		index = dist_particles(gen);
 		new_particles.push_back(particles[index]);
 	}
 	particles = new_particles;
