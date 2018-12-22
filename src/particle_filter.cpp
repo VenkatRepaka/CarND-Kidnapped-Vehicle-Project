@@ -112,6 +112,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	const double x_denom = 2 * std_landmark[0] * std_landmark[0];
 	const double y_denom = 2 * std_landmark[1] * std_landmark[1];
 	double weight, trans_x, trans_y, particle_landmark_dist, x_diff, y_diff, x_numer, y_numer, exponent;
+	Map::single_landmark_s nearestLandmark;
 	for(unsigned int i=0;i<particles.size();i++) {
 		vector<LandmarkObs> trans_observations;
 		particles[i].weight = 1.0;
@@ -132,7 +133,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		dataAssociation(inrange_landmarks, trans_observations);
 
 		weight = 1.0;
-		for(unsigned int j=0;j<trans_observations.size();j++) {
+		/* for(unsigned int j=0;j<trans_observations.size();j++) {
 			for(unsigned int k=0;k<inrange_landmarks.size();k++) {
 				if(trans_observations[j].id == inrange_landmarks[k].id) {
 					x_diff = trans_observations[j].x - inrange_landmarks[k].x;
@@ -143,6 +144,16 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 					weight *= weight_calc_const * exp(-exponent);
 				}
 			}
+		} */
+		// Optimal code for above for loop
+		for(unsigned int j=0;j<trans_observations.size();j++) {
+			nearestLandmark = map_landmarks.landmark_list[trans_observations[j].id - 1];
+			x_diff = trans_observations[j].x - nearestLandmark.x_f;
+			y_diff = trans_observations[j].y - nearestLandmark.y_f;
+			x_numer = x_diff * x_diff;
+			y_numer = y_diff * y_diff;
+			exponent = (x_numer/x_denom) + (y_numer/y_denom);
+			weight *= weight_calc_const * exp(-exponent);
 		}
 		particles[i].weight = weight;
 		weights[i] = particles[i].weight;
